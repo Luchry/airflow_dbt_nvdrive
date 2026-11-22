@@ -1,0 +1,463 @@
+version: 2
+models:
+  - name: "dim_veiculos"
+    description: "Uma linha por veículo, com o estado atual do cadastro. Dimensão tipo 1 reconstruída como tabela; não mantém histórico de alterações."
+    columns:
+      - name: "veiculo_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único do veículo no sistema de origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_veiculo"
+        data_type: "VARCHAR"
+        description: "Nome comercial do veículo, sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "tipo"
+        data_type: "VARCHAR"
+        description: "Categoria do veículo conforme o cadastro de origem."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "valor_sugerido"
+        data_type: "NUMBER(10,2)"
+        description: "Preço sugerido atual do cadastro, em reais. Não representa o preço histórico na data da venda."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "dim_estados"
+    description: "Uma linha por estado, com o estado atual do cadastro. Dimensão tipo 1 reconstruída como tabela; não mantém histórico de alterações."
+    columns:
+      - name: "estado_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único do estado na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_estado"
+        data_type: "VARCHAR"
+        description: "Nome do estado sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "sigla"
+        data_type: "VARCHAR"
+        description: "Sigla do estado, normalizada em maiúsculas e com dois caracteres, conforme o CHAR(2) da origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+          - length_equals:
+              arguments:
+                length: 2
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "dim_cidades"
+    description: "Uma linha por cidade, com o estado atual do cadastro. Dimensão tipo 1 reconstruída como tabela; não mantém histórico de alterações."
+    columns:
+      - name: "cidade_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único da cidade na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_cidade"
+        data_type: "VARCHAR"
+        description: "Nome da cidade sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "estado_id"
+        data_type: "NUMBER(38,0)"
+        description: "Estado ao qual a cidade pertence."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_estados') }}"
+                field: "estado_id"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "dim_concessionarias"
+    description: "Uma linha por concessionária, com o estado atual do cadastro. Dimensão tipo 1 reconstruída como tabela; não mantém histórico de alterações."
+    columns:
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único da concessionária na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_concessionaria"
+        data_type: "VARCHAR"
+        description: "Nome da concessionária sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "cidade_id"
+        data_type: "NUMBER(38,0)"
+        description: "Cidade da concessionária."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_cidades') }}"
+                field: "cidade_id"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "dim_vendedores"
+    description: "Uma linha por vendedor, com o estado atual do cadastro. Dimensão tipo 1 reconstruída como tabela; não mantém histórico de alterações."
+    columns:
+      - name: "vendedor_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único do vendedor na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_vendedor"
+        data_type: "VARCHAR"
+        description: "Nome do vendedor sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Concessionária atual do cadastro do vendedor; pode diferir da concessionária de uma venda passada."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_concessionarias') }}"
+                field: "concessionaria_id"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "dim_clientes"
+    description: "Uma linha por cliente, com o estado atual do cadastro. Dimensão tipo 1 reconstruída como tabela; não mantém histórico de alterações."
+    columns:
+      - name: "cliente_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único do cliente na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_cliente"
+        data_type: "VARCHAR"
+        description: "Nome do cliente sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "endereco"
+        data_type: "VARCHAR"
+        description: "Endereço cadastral do cliente. Informação pessoal; usar dados fictícios em demonstrações públicas."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Concessionária atual do cadastro do cliente."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_concessionarias') }}"
+                field: "concessionaria_id"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "fct_vendas"
+    description: "Uma linha por venda, identificada por venda_id. Preserva todos os registros de staging, inclusive relações inválidas que devem falhar nos testes. Reconstruída como tabela para refletir correções em vendas antigas; não há filtro por maior ID."
+    columns:
+      - name: "venda_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único da venda. Cada linha representa uma venda de um veículo."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "veiculo_id"
+        data_type: "NUMBER(38,0)"
+        description: "Veículo associado à venda."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_veiculos') }}"
+                field: "veiculo_id"
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Concessionária registrada na venda, usada para atribuir seu faturamento."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_concessionarias') }}"
+                field: "concessionaria_id"
+      - name: "vendedor_id"
+        data_type: "NUMBER(38,0)"
+        description: "Vendedor associado à venda."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_vendedores') }}"
+                field: "vendedor_id"
+      - name: "cliente_id"
+        data_type: "NUMBER(38,0)"
+        description: "Cliente associado à venda."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_clientes') }}"
+                field: "cliente_id"
+      - name: "valor_venda"
+        data_type: "NUMBER(10,2)"
+        description: "Valor efetivamente pago nesta venda, em reais e com duas casas decimais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "data_venda"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante da venda. Obrigatório na camada analítica para permitir a agregação temporal."
+        data_tests:
+          - "not_null"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "mart_vendas_concessionaria"
+    description: "Uma linha por concessionaria_id com vendas em todo o período disponível. Atribui receita à concessionária da venda; cidade e estado refletem o cadastro atual."
+    columns:
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Concessionária registrada na venda; chave do grupo."
+        data_tests:
+          - "not_null"
+          - "unique"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_concessionarias') }}"
+                field: "concessionaria_id"
+      - name: "nome_concessionaria"
+        data_type: "VARCHAR"
+        description: "Nome atual da concessionária."
+        data_tests:
+          - "not_null"
+      - name: "nome_cidade"
+        data_type: "VARCHAR"
+        description: "Cidade atual da concessionária."
+        data_tests:
+          - "not_null"
+      - name: "nome_estado"
+        data_type: "VARCHAR"
+        description: "Estado atual da concessionária."
+        data_tests:
+          - "not_null"
+      - name: "quantidade_vendas"
+        data_type: "NUMBER(38,0)"
+        description: "Quantidade de vendas no grupo; cada venda da fato contribui uma vez."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "valor_total_vendas"
+        data_type: "NUMBER(38,2)"
+        description: "Soma do valor efetivamente pago pelas vendas do grupo, em reais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "ticket_medio"
+        data_type: "NUMBER(38,8)"
+        description: "Média aritmética do valor pago por venda no grupo, em reais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+  - name: "mart_vendas_vendedor"
+    description: "Uma linha por combinação vendedor_id e concessionaria_id da venda, em todo o período. Mudanças na lotação atual do vendedor não transferem a receita histórica para outra concessionária."
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns:
+              - "vendedor_id"
+              - "concessionaria_id"
+    columns:
+      - name: "vendedor_id"
+        data_type: "NUMBER(38,0)"
+        description: "Vendedor registrado nas vendas do grupo."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_vendedores') }}"
+                field: "vendedor_id"
+      - name: "nome_vendedor"
+        data_type: "VARCHAR"
+        description: "Nome atual do vendedor."
+        data_tests:
+          - "not_null"
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Concessionária registrada nas vendas do grupo."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_concessionarias') }}"
+                field: "concessionaria_id"
+      - name: "nome_concessionaria"
+        data_type: "VARCHAR"
+        description: "Nome atual da concessionária registrada na venda."
+        data_tests:
+          - "not_null"
+      - name: "quantidade_vendas"
+        data_type: "NUMBER(38,0)"
+        description: "Quantidade de vendas no grupo; cada venda da fato contribui uma vez."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "valor_total_vendas"
+        data_type: "NUMBER(38,2)"
+        description: "Soma do valor efetivamente pago pelas vendas do grupo, em reais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "ticket_medio"
+        data_type: "NUMBER(38,8)"
+        description: "Média aritmética do valor pago por venda no grupo, em reais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+  - name: "mart_vendas_veiculo"
+    description: "Uma linha por veiculo_id com vendas em todo o período. O preço sugerido exibido é o atual e não é usado para validar descontos históricos."
+    columns:
+      - name: "veiculo_id"
+        data_type: "NUMBER(38,0)"
+        description: "Veículo das vendas do grupo; chave do mart."
+        data_tests:
+          - "not_null"
+          - "unique"
+          - relationships:
+              arguments:
+                to: "{{ ref('dim_veiculos') }}"
+                field: "veiculo_id"
+      - name: "nome_veiculo"
+        data_type: "VARCHAR"
+        description: "Nome atual do veículo."
+        data_tests:
+          - "not_null"
+      - name: "tipo"
+        data_type: "VARCHAR"
+        description: "Categoria atual do veículo."
+        data_tests:
+          - "not_null"
+      - name: "valor_sugerido_atual"
+        data_type: "NUMBER(10,2)"
+        description: "Preço sugerido atual em reais; não representa preço vigente em vendas passadas."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "quantidade_vendas"
+        data_type: "NUMBER(38,0)"
+        description: "Quantidade de vendas no grupo; cada venda da fato contribui uma vez."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "valor_total_vendas"
+        data_type: "NUMBER(38,2)"
+        description: "Soma do valor efetivamente pago pelas vendas do grupo, em reais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "ticket_medio"
+        data_type: "NUMBER(38,8)"
+        description: "Média aritmética do valor pago por venda no grupo, em reais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+  - name: "mart_vendas_mensal"
+    description: "Uma linha por mês com vendas. O mês é calculado no fuso business_timezone, por padrão America/Sao_Paulo, e inclui somente meses presentes na fato."
+    columns:
+      - name: "mes_venda"
+        data_type: "DATE"
+        description: "Primeiro dia do mês de venda no fuso de negócio; chave do mart."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "quantidade_vendas"
+        data_type: "NUMBER(38,0)"
+        description: "Quantidade de vendas no grupo; cada venda da fato contribui uma vez."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "valor_total_vendas"
+        data_type: "NUMBER(38,2)"
+        description: "Soma do valor efetivamente pago pelas vendas do grupo, em reais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "ticket_medio"
+        data_type: "NUMBER(38,8)"
+        description: "Média aritmética do valor pago por venda no grupo, em reais."
+        data_tests:
+          - "not_null"
+          - "positive_values"

@@ -1,0 +1,288 @@
+version: 2
+models:
+  - name: "stg_postgres__veiculos"
+    description: "Uma linha por veículo. Padroniza nomes, tipos e espaços sem joins ou remoção de registros. data_atualizacao usa data_inclusao como alternativa; ambos ausentes geram falha de qualidade."
+    columns:
+      - name: "veiculo_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único do veículo no sistema de origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_veiculo"
+        data_type: "VARCHAR"
+        description: "Nome comercial do veículo, sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "tipo"
+        data_type: "VARCHAR"
+        description: "Categoria do veículo conforme o cadastro de origem."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "valor_sugerido"
+        data_type: "NUMBER(10,2)"
+        description: "Preço sugerido atual do cadastro, em reais. Não representa o preço histórico na data da venda."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "stg_postgres__estados"
+    description: "Uma linha por estado. Padroniza nomes, tipos e espaços sem joins ou remoção de registros. data_atualizacao usa data_inclusao como alternativa; ambos ausentes geram falha de qualidade."
+    columns:
+      - name: "estado_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único do estado na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_estado"
+        data_type: "VARCHAR"
+        description: "Nome do estado sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "sigla"
+        data_type: "VARCHAR"
+        description: "Sigla do estado, normalizada em maiúsculas e com dois caracteres, conforme o CHAR(2) da origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+          - length_equals:
+              arguments:
+                length: 2
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "stg_postgres__cidades"
+    description: "Uma linha por cidade. Padroniza nomes, tipos e espaços sem joins ou remoção de registros. data_atualizacao usa data_inclusao como alternativa; ambos ausentes geram falha de qualidade."
+    columns:
+      - name: "cidade_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único da cidade na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_cidade"
+        data_type: "VARCHAR"
+        description: "Nome da cidade sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "estado_id"
+        data_type: "NUMBER(38,0)"
+        description: "Estado ao qual a cidade pertence."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('stg_postgres__estados') }}"
+                field: "estado_id"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "stg_postgres__concessionarias"
+    description: "Uma linha por concessionária. Padroniza nomes, tipos e espaços sem joins ou remoção de registros. data_atualizacao usa data_inclusao como alternativa; ambos ausentes geram falha de qualidade."
+    columns:
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único da concessionária na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_concessionaria"
+        data_type: "VARCHAR"
+        description: "Nome da concessionária sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "cidade_id"
+        data_type: "NUMBER(38,0)"
+        description: "Cidade da concessionária."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('stg_postgres__cidades') }}"
+                field: "cidade_id"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "stg_postgres__vendedores"
+    description: "Uma linha por vendedor. Padroniza nomes, tipos e espaços sem joins ou remoção de registros. data_atualizacao usa data_inclusao como alternativa; ambos ausentes geram falha de qualidade."
+    columns:
+      - name: "vendedor_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único do vendedor na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_vendedor"
+        data_type: "VARCHAR"
+        description: "Nome do vendedor sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Concessionária atual do cadastro do vendedor; pode diferir da concessionária de uma venda passada."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('stg_postgres__concessionarias') }}"
+                field: "concessionaria_id"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "stg_postgres__clientes"
+    description: "Uma linha por cliente. Padroniza nomes, tipos e espaços sem joins ou remoção de registros. data_atualizacao usa data_inclusao como alternativa; ambos ausentes geram falha de qualidade."
+    columns:
+      - name: "cliente_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único do cliente na origem."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "nome_cliente"
+        data_type: "VARCHAR"
+        description: "Nome do cliente sem espaços nas extremidades."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "endereco"
+        data_type: "VARCHAR"
+        description: "Endereço cadastral do cliente. Informação pessoal; usar dados fictícios em demonstrações públicas."
+        data_tests:
+          - "not_null"
+          - "not_blank"
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Concessionária atual do cadastro do cliente."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('stg_postgres__concessionarias') }}"
+                field: "concessionaria_id"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
+  - name: "stg_postgres__vendas"
+    description: "Uma linha por venda. Padroniza nomes, tipos e espaços sem joins ou remoção de registros. data_atualizacao usa data_inclusao como alternativa; ambos ausentes geram falha de qualidade."
+    columns:
+      - name: "venda_id"
+        data_type: "NUMBER(38,0)"
+        description: "Identificador único da venda. Cada linha representa uma venda de um veículo."
+        data_tests:
+          - "not_null"
+          - "unique"
+      - name: "veiculo_id"
+        data_type: "NUMBER(38,0)"
+        description: "Veículo associado à venda."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('stg_postgres__veiculos') }}"
+                field: "veiculo_id"
+      - name: "concessionaria_id"
+        data_type: "NUMBER(38,0)"
+        description: "Concessionária registrada na venda, usada para atribuir seu faturamento."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('stg_postgres__concessionarias') }}"
+                field: "concessionaria_id"
+      - name: "vendedor_id"
+        data_type: "NUMBER(38,0)"
+        description: "Vendedor associado à venda."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('stg_postgres__vendedores') }}"
+                field: "vendedor_id"
+      - name: "cliente_id"
+        data_type: "NUMBER(38,0)"
+        description: "Cliente associado à venda."
+        data_tests:
+          - "not_null"
+          - relationships:
+              arguments:
+                to: "{{ ref('stg_postgres__clientes') }}"
+                field: "cliente_id"
+      - name: "valor_venda"
+        data_type: "NUMBER(10,2)"
+        description: "Valor efetivamente pago nesta venda, em reais e com duas casas decimais."
+        data_tests:
+          - "not_null"
+          - "positive_values"
+      - name: "data_venda"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante da venda. Obrigatório na camada analítica para permitir a agregação temporal."
+        data_tests:
+          - "not_null"
+      - name: "data_inclusao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Instante de inclusão informado pela origem; pode estar ausente em registros legados."
+      - name: "data_atualizacao"
+        data_type: "TIMESTAMP_LTZ"
+        description: "Última atualização da origem, usando data_inclusao como alternativa quando nula. Nunca é preenchida com o horário da transformação."
+        data_tests:
+          - "not_null"
+          - not_before:
+              arguments:
+                other_column: "data_inclusao"
